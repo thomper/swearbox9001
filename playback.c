@@ -4,6 +4,7 @@
 
 /* local variables */
 pthread_t playback_thread;
+ao_device* device;
 u_int quit = 0;
 char* queue_buffers[MAX_QUEUED];
 uint_32 queue_lengths[MAX_QUEUED];
@@ -11,8 +12,7 @@ u_int insertion_index = 0;
 u_int playback_index = 0;
 
 /* global variables */
-ao_device* device;
-ao_sample_format format;
+ao_sample_format format;  // TODO: may not need to be global, currently only is for generating sample data
 
 /* local functions */
 void increment_index(u_int *value) {

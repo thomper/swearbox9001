@@ -5,7 +5,6 @@
 
 #define MAX_QUEUED 1024  // the number of sounds to queue before we start overwriting
 
-extern ao_device* device;
 extern ao_sample_format format;
 
 void initialise(void);
