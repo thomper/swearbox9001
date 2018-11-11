@@ -25,7 +25,10 @@ int main() {
 		buffer[4*i+1] = (sample >> 8) & 0xff;
 	}
 
-	play(buffer, buf_size);
+	for (i = 0; i < 10000; ++i) {
+        queue_playback(buffer, buf_size);
+	}
+
 	tear_down();
 
     return EXIT_SUCCESS;
