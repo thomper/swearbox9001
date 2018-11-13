@@ -1,5 +1,5 @@
 all:
-	gcc main.c playback.c -o swearbox9001 -lm -lao -lpthread
+	gcc main.c playback.c reader.c -o swearbox9001 -lao -lpthread -lsndfile
 
 clean:
 	rm ./swearbox9001

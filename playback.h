@@ -1,16 +1,17 @@
 #ifndef SWEARBOX9001_PLAYBACK_H
 #define SWEARBOX9001_PLAYBACK_H
 
+#include "reader.h"
+
 #include <ao/ao.h>
 
-#define MAX_QUEUED 1024  // the number of sounds to queue before we start overwriting
+#include <inttypes.h>
 
-extern ao_sample_format format;
 
-void initialise(void);
+void initialise_playback(void);
 
-void queue_playback(char *samples, uint_32 num_bytes);
+void queue_playback(struct Sample* sample);
 
-void tear_down(void);
+void tear_down_playback(void);
 
 #endif //SWEARBOX9001_PLAYBACK_H
