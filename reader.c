@@ -19,13 +19,49 @@ int load_sample_bank(struct SampleBank* bank) {
     char sound_files_directory[strlen(home_dir) + strlen("/") + strlen(SOUND_FILE_SUBDIRECTORY) + 1];
     sprintf(sound_files_directory, "%s/%s", home_dir, SOUND_FILE_SUBDIRECTORY);
 
-    int return_error = 0;
+    int last_error = 0;
+    for (uint16_t i = 0; i < BANK_SIZE; i++) {
+        bank->array[i] = NULL;
+    }
     for (uint16_t i = 0; i < BANK_SIZE && bank->filename_stubs[i] != NULL; i++) {
         bank->array[i] = calloc(1, sizeof (struct ASRSamples));
-        return_error = return_error != 0 ? return_error : load_asr_samples(sound_files_directory, bank->filename_stubs[i], bank->array[i]);
+        int temp_error = load_asr_samples(sound_files_directory, bank->filename_stubs[i], bank->array[i]);
+        last_error = temp_error != 0 ? temp_error : last_error;
     }
 
-    return return_error;
+    return last_error;
+}
+
+static void free_sample(struct Sample* sample) {
+    if (sample != NULL) {
+        if (sample->sample_data != NULL) {
+            free(sample->sample_data);
+            sample->sample_data = NULL;
+        }
+        free(sample);
+    }
+}
+
+static void free_asrsamples(struct ASRSamples* samples) {
+    if (samples != NULL) {
+        free_sample(samples->attack);
+        samples->attack = NULL;
+
+        free_sample(samples->sustain);
+        samples->sustain = NULL;
+
+        free_sample(samples->release);
+        samples->release = NULL;
+
+        free(samples);
+    }
+}
+
+void free_sample_bank_array(struct SampleBank* bank) {
+    for (uint16_t i = 0; i < BANK_SIZE; i++) {
+        free_asrsamples(bank->array[i]);
+        bank->array[i] = NULL;
+    }
 }
 
 static int load_asr_samples(char* const directory, char* const filename_stub, struct ASRSamples* samples) {
@@ -108,6 +144,7 @@ static int load_sample(char* path, struct Sample* sample) {
         sample->sample_data[2 * i] = (temp_sample_data[i] >> 8) & 0xff;
         sample->sample_data[2 * i + 1] = temp_sample_data[i] & 0xff;
     }
+    free(temp_sample_data);
 
     if (sf_close(sound_file)) {
         fprintf(stderr, "Could not close sound file %s, exiting.\n", path);

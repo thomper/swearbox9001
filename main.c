@@ -15,18 +15,16 @@ int main() {
     for (uint16_t i = 0; i < BANK_SIZE; i++) {
         bank.filename_stubs[i] = NULL;
     }
-    bank.filename_stubs[0] = "test_f";
-    bank.filename_stubs[1] = "song_f";
+    bank.filename_stubs[0] = "song_f";
 
     load_sample_bank(&bank);
     queue_playback(bank.array[0]->attack);
+    queue_playback(bank.array[0]->sustain);
     queue_playback(bank.array[0]->release);
-    queue_playback(bank.array[1]->attack);
-    queue_playback(bank.array[1]->sustain);
-    queue_playback(bank.array[1]->release);
 
-    sleep(9);  // for testing, so we don't quit before we're done playing sounds
+    sleep(6);  // for testing, so we don't quit before we're done playing sounds
 
+    free_sample_bank_array(&bank);
     tear_down_playback();
 
     return EXIT_SUCCESS;

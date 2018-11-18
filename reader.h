@@ -29,6 +29,6 @@ struct SampleBank {
  * @return 0 on success, non-zero otherwise.
  */
 int load_sample_bank(struct SampleBank* bank);
-void free_sample_bank(struct SampleBank* bank); // TODO
+void free_sample_bank_array(struct SampleBank* bank);
 
 #endif //SWEARBOX9001_READER_H
