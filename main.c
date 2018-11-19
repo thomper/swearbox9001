@@ -1,3 +1,4 @@
+#include "input.h"
 #include "playback.h"
 #include "reader.h"
 
@@ -16,13 +17,11 @@ int main() {
         bank.filename_stubs[i] = NULL;
     }
     bank.filename_stubs[0] = "song_f";
+    bank.filename_stubs[1] = "test_f";
 
     load_sample_bank(&bank);
-    queue_playback(bank.array[0]->attack);
-    queue_playback(bank.array[0]->sustain);
-    queue_playback(bank.array[0]->release);
 
-    sleep(6);  // for testing, so we don't quit before we're done playing sounds
+    input_thread_loop(&bank);
 
     free_sample_bank_array(&bank);
     tear_down_playback();
