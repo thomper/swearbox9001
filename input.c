@@ -1,10 +1,9 @@
 #include "input.h"
-#include "playback.h"
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_events.h>
 
-#include <stdio.h>
+#include <assert.h>
 #include <stdlib.h>
 
 
@@ -148,72 +147,4 @@ uint16_t bank_array_index_from_keycodes(uint16_t keys) {
     assert(action_key_in_keycodes(keys));
 
     return bank_addend_from_keycodes(keys) + action_addend_from_keycodes(keys);
-}
-
-static uint16_t keycodes_from_keyboard_key(int keychar) {
-    switch (keychar) {
-        case 'z':
-            return SB9001_KEY_A;
-        case 'x':
-            return SB9001_KEY_B;
-        case 'c':
-            return SB9001_KEY_C;
-        case 'v':
-            return SB9001_KEY_D;
-        case 'b':
-            return SB9001_KEY_E;
-        case 'n':
-            return SB9001_KEY_F;
-
-        case 'a':
-            return SB9001_KEY_A | SB9001_KEY_BANK_B;
-        case 's':
-            return SB9001_KEY_B | SB9001_KEY_BANK_B;
-        case 'd':
-            return SB9001_KEY_C | SB9001_KEY_BANK_B;
-        case 'f':
-            return SB9001_KEY_D | SB9001_KEY_BANK_B;
-        case 'g':
-            return SB9001_KEY_E | SB9001_KEY_BANK_B;
-        case 'h':
-            return SB9001_KEY_F | SB9001_KEY_BANK_B;
-
-        case 'q':
-            return SB9001_KEY_A | SB9001_KEY_BANK_C;
-        case 'w':
-            return SB9001_KEY_B | SB9001_KEY_BANK_C;
-        case 'e':
-            return SB9001_KEY_C | SB9001_KEY_BANK_C;
-        case 'r':
-            return SB9001_KEY_D | SB9001_KEY_BANK_C;
-        case 't':
-            return SB9001_KEY_E | SB9001_KEY_BANK_C;
-        case 'y':
-            return SB9001_KEY_F | SB9001_KEY_BANK_C;
-    }
-
-    return 0;
-}
-
-static void process_keyboard_key(int keychar, struct SampleBank *bank) {
-    // TESTING ONLY: final version will take input from USB
-    uint16_t keys = keycodes_from_keyboard_key(keychar);
-
-    uint16_t index = bank_array_index_from_keycodes(keys);
-
-    if (bank->array[index] != NULL) {
-        queue_playback(bank->array[index]->attack);
-    }
-}
-
-void input_thread_loop_keyboard(struct SampleBank *bank) {
-    int c;
-
-    system("/bin/stty raw");
-
-    while ((c = getchar()) != EOF) {
-        process_keyboard_key(c, bank);
-    }
-
-    system("/bin/stty cooked");
 }

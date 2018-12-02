@@ -31,4 +31,5 @@ struct SampleBank {
 int load_sample_bank(struct SampleBank* bank);
 void free_sample_bank_array(struct SampleBank* bank);
 
+
 #endif //SWEARBOX9001_READER_H

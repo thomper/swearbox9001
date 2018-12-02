@@ -75,7 +75,11 @@ void initialise_playback(void) {
     start_playback_thread();
 }
 
-void queue_playback(struct Sample* sample) {
+void enqueue_playback(struct Sample *sample) {
+    if (sample == NULL) {
+        fprintf(stderr, "NULL sample queued for playback.\n");
+        return;
+    }
     queue[insertion_index] = sample;
     increment_index(&insertion_index);
 }

@@ -6,8 +6,6 @@
 #include <SDL2/SDL_events.h>
 
 #include <stdint.h>
-#include <stdio.h>
-#include <assert.h>
 
 
 extern uint16_t SB9001_KEY_LEFT;
@@ -31,13 +29,7 @@ uint16_t key_enum_from_sdl_event(SDL_Event* event, uint16_t current);
 
 uint16_t action_key_in_keycodes(uint16_t keys);
 
-uint16_t bank_addend_from_keycodes(uint16_t keys);
-
-uint16_t action_addend_from_keycodes(uint16_t keys);
-
 uint16_t bank_array_index_from_keycodes(uint16_t keys);
-
-void input_thread_loop_keyboard(struct SampleBank *bank);
 
 
 #endif //SWEARBOX9001_INPUT_H

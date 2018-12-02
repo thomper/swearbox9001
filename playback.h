@@ -10,8 +10,9 @@
 
 void initialise_playback(void);
 
-void queue_playback(struct Sample* sample);
+void enqueue_playback(struct Sample *sample);
 
 void tear_down_playback(void);
+
 
 #endif //SWEARBOX9001_PLAYBACK_H
