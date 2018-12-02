@@ -4,7 +4,7 @@
 #include <inttypes.h>
 
 
-#define BANK_SIZE 18  // the number of sounds available per bank
+#define BANK_SIZE 24  // the number of sounds available per bank
 
 struct Sample {
     uint32_t num_bytes;
