@@ -8,6 +8,7 @@
 
 
 #define MAX_QUEUED 1024  // the number of sounds to queue before we start overwriting
+#define BUFFER_SIZE 256  // number of audio samples we play at a time
 
 enum PlaybackState {
     PLAYBACK_WAITING,
@@ -25,6 +26,7 @@ struct Sample* queue[MAX_QUEUED];
 u_int insertion_index = 0;
 u_int playback_index = 0;
 enum PlaybackState playback_state = PLAYBACK_WAITING;
+char buffer[BUFFER_SIZE];
 
 // functions
 static void increment_index(u_int *value) {
@@ -35,7 +37,15 @@ static void increment_index(u_int *value) {
 }
 
 static void play(struct Sample* sample) {
-    ao_play(device, sample->sample_data, sample->num_bytes);
+    uint32_t num_chunks = sample->num_bytes / BUFFER_SIZE;
+    uint32_t chunk_size = BUFFER_SIZE;
+    for (uint i = 0; i < num_chunks; i++) {
+        int is_final_chunk = i == num_chunks - 1;
+        if (is_final_chunk) {
+            chunk_size = sample->num_bytes % BUFFER_SIZE;
+        }
+        ao_play(device, sample->sample_data + i * BUFFER_SIZE, chunk_size);
+    }
 }
 
 static void set_format() {
