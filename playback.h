@@ -10,7 +10,7 @@
 
 void initialise_playback(void);
 
-void enqueue_playback(struct Sample *sample);
+void play_if_silent(struct Sample *sample);
 
 void tear_down_playback(void);
 

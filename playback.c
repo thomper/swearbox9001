@@ -9,6 +9,13 @@
 
 #define MAX_QUEUED 1024  // the number of sounds to queue before we start overwriting
 
+enum PlaybackState {
+    PLAYBACK_WAITING,
+    PLAYBACK_ATTACK,
+    PLAYBACK_SUSTAIN,
+    PLAYBACK_RELEASE
+};
+
 // locals
 pthread_t playback_thread;
 ao_sample_format format;
@@ -17,6 +24,7 @@ uint8_t quit = 0;
 struct Sample* queue[MAX_QUEUED];
 u_int insertion_index = 0;
 u_int playback_index = 0;
+enum PlaybackState playback_state = PLAYBACK_WAITING;
 
 // functions
 static void increment_index(u_int *value) {
@@ -50,7 +58,9 @@ static void initialise_ao() {
 static void playback_thread_loop(void) {
     while (!quit) {
         if (queue[playback_index] != NULL) {
+            playback_state = PLAYBACK_ATTACK;
             play(queue[playback_index]);
+            playback_state = PLAYBACK_WAITING;
             queue[playback_index] = NULL;
             increment_index(&playback_index);
         } else {
@@ -75,11 +85,16 @@ void initialise_playback(void) {
     start_playback_thread();
 }
 
-void enqueue_playback(struct Sample *sample) {
+void play_if_silent(struct Sample *sample) {
     if (sample == NULL) {
         fprintf(stderr, "NULL sample queued for playback.\n");
         return;
     }
+
+    if (playback_state != PLAYBACK_WAITING) {
+        return;
+    }
+
     queue[insertion_index] = sample;
     increment_index(&insertion_index);
 }
