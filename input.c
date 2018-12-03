@@ -7,61 +7,58 @@
 #include <stdlib.h>
 
 
-uint16_t SB9001_KEY_LEFT     = 0b00000000000001;
-uint16_t SB9001_KEY_RIGHT    = 0b00000000000010;
-uint16_t SB9001_KEY_UP       = 0b00000000000100;
-uint16_t SB9001_KEY_DOWN     = 0b00000000001000;
-uint16_t SB9001_KEY_BANK_B   = 0b00000000010000;
-uint16_t SB9001_KEY_BANK_C   = 0b00000000100000;
-uint16_t SB9001_KEY_A        = 0b00000001000000;
-uint16_t SB9001_KEY_B        = 0b00000010000000;
-uint16_t SB9001_KEY_C        = 0b00000100000000;
-uint16_t SB9001_KEY_D        = 0b00001000000000;
-uint16_t SB9001_KEY_E        = 0b00010000000000;
-uint16_t SB9001_KEY_F        = 0b00100000000000;
-uint16_t SB9001_KEY_OPTION_A = 0b01000000000000;
-uint16_t SB9001_KEY_OPTION_B = 0b10000000000000;
-
 SDL_Joystick* joystick = NULL;
+const struct SB9001Event EMPTY_EVENT = {
+    SB9001_HORI_MOTION_NONE,  // hori_motion
+    SB9001_VERT_MOTION_NONE,  // vert_motion
 
-uint16_t key_enum_from_sdl_event(SDL_Event* event, uint16_t current) {
+    SB9001_BANK_KEY_NONE,     // bank_key
+    0,                        // bank_key_depressed
+
+    SB9001_ACTION_KEY_NONE,   // action_key
+    0                         // action_key_depressed
+};
+
+struct SB9001Event sb_event_from_sdl_event(SDL_Event* event) {
+    struct SB9001Event current = EMPTY_EVENT;
+
     if (event->type == SDL_JOYBUTTONDOWN) {
         switch (event->jbutton.button) {
-            case 0: current |= SB9001_KEY_BANK_B; break;
-            case 1: current |= SB9001_KEY_A; break;
-            case 2: current |= SB9001_KEY_B; break;
-            case 3: current |= SB9001_KEY_C; break;
-            case 4: current |= SB9001_KEY_BANK_C; break;
-            case 5: current |= SB9001_KEY_D; break;
-            case 6: current |= SB9001_KEY_E; break;
-            case 7: current |= SB9001_KEY_F; break;
-            default: break;
+            case 0: current.bank_key_depressed = 1; current.bank_key = SB9001_BANK_KEY_B; break;
+            case 4: current.bank_key_depressed = 1; current.bank_key = SB9001_BANK_KEY_C; break;
+            case 1: current.action_key_depressed = 1; current.action_key = SB9001_ACTION_KEY_A; break;
+            case 2: current.action_key_depressed = 1; current.action_key = SB9001_ACTION_KEY_B; break;
+            case 3: current.action_key_depressed = 1; current.action_key = SB9001_ACTION_KEY_C; break;
+            case 5: current.action_key_depressed = 1; current.action_key = SB9001_ACTION_KEY_D; break;
+            case 6: current.action_key_depressed = 1; current.action_key = SB9001_ACTION_KEY_E; break;
+            case 7: current.action_key_depressed = 1; current.action_key = SB9001_ACTION_KEY_F; break;
+            default: ;
         }
     } else if (event->type == SDL_JOYBUTTONUP) {
         switch (event->jbutton.button) {
-            case 0: current &= ~SB9001_KEY_BANK_B; break;
-            case 1: current &= ~SB9001_KEY_A; break;
-            case 2: current &= ~SB9001_KEY_B; break;
-            case 3: current &= ~SB9001_KEY_C; break;
-            case 4: current &= ~SB9001_KEY_BANK_C; break;
-            case 5: current &= ~SB9001_KEY_D; break;
-            case 6: current &= ~SB9001_KEY_E; break;
-            case 7: current &= ~SB9001_KEY_F; break;
-            default: break;
+            case 0: current.bank_key_depressed = 0; current.bank_key = SB9001_BANK_KEY_B; break;
+            case 4: current.bank_key_depressed = 0; current.bank_key = SB9001_BANK_KEY_C; break;
+            case 1: current.action_key_depressed = 0; current.action_key = SB9001_ACTION_KEY_A; break;
+            case 2: current.action_key_depressed = 0; current.action_key = SB9001_ACTION_KEY_B; break;
+            case 3: current.action_key_depressed = 0; current.action_key = SB9001_ACTION_KEY_C; break;
+            case 5: current.action_key_depressed = 0; current.action_key = SB9001_ACTION_KEY_D; break;
+            case 6: current.action_key_depressed = 0; current.action_key = SB9001_ACTION_KEY_E; break;
+            case 7: current.action_key_depressed = 0; current.action_key = SB9001_ACTION_KEY_F; break;
+            default: ;
         }
     } else if (event->type == SDL_JOYAXISMOTION) {
         if (event->jaxis.axis == 0) {
             switch (event->jaxis.value) {
-                case -32768: current |= SB9001_KEY_LEFT; break;
-                case 0: current &= (~SB9001_KEY_LEFT & ~SB9001_KEY_RIGHT); break;
-                case 32767: current |= SB9001_KEY_RIGHT; break;
+                case -32768: current.hori_motion = SB9001_HORI_MOTION_LEFT; break;
+                case 0: current.hori_motion = SB9001_HORI_MOTION_CENTRE; break;
+                case 32767: current.hori_motion = SB9001_HORI_MOTION_RIGHT; break;
                 default: break;
             }
         } else if (event->jaxis.axis == 1) {
             switch (event->jaxis.value) {
-                case -32768: current |= SB9001_KEY_UP; break;
-                case 0: current &= (~SB9001_KEY_UP & ~SB9001_KEY_DOWN); break;
-                case 32767: current |= SB9001_KEY_DOWN; break;
+                case -32768: current.vert_motion = SB9001_VERT_MOTION_UP; break;
+                case 0: current.vert_motion = SB9001_VERT_MOTION_CENTRE; break;
+                case 32767: current.vert_motion = SB9001_VERT_MOTION_DOWN; break;
                 default: break;
             }
         }
@@ -88,63 +85,6 @@ void initialise_joystick(void) {
         }
     }
 
-    fprintf(stderr, "Could not open a joystick (%d found).  Exiting.\n", num_joysticks);
+    fprintf(stderr, "Could not open a joystick (found %d).  Exiting.\n", num_joysticks);
     exit(EXIT_FAILURE);
-}
-
-uint16_t action_key_in_keycodes(uint16_t keys) {
-    return keys & (SB9001_KEY_A |
-                   SB9001_KEY_B |
-                   SB9001_KEY_C |
-                   SB9001_KEY_D |
-                   SB9001_KEY_E |
-                   SB9001_KEY_F);
-}
-
-uint16_t bank_addend_from_keycodes(uint16_t keys) {
-    if (keys & SB9001_KEY_BANK_B) {
-        return 6;
-    }
-
-    if (keys & SB9001_KEY_BANK_C) {
-        return 12;
-    }
-
-    return 0;
-}
-
-uint16_t action_addend_from_keycodes(uint16_t keys) {
-    assert(action_key_in_keycodes(keys));
-
-    if (keys & SB9001_KEY_A) {
-        return 0;
-    }
-
-    if (keys & SB9001_KEY_B) {
-        return 1;
-    }
-
-    if (keys & SB9001_KEY_C) {
-        return 2;
-    }
-
-    if (keys & SB9001_KEY_D) {
-        return 3;
-    }
-
-    if (keys & SB9001_KEY_E) {
-        return 4;
-    }
-
-    if (keys & SB9001_KEY_F) {
-        return 5;
-    }
-
-    assert(0);  // should never be reached
-}
-
-uint16_t bank_array_index_from_keycodes(uint16_t keys) {
-    assert(action_key_in_keycodes(keys));
-
-    return bank_addend_from_keycodes(keys) + action_addend_from_keycodes(keys);
 }

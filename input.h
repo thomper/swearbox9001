@@ -1,35 +1,54 @@
 #ifndef SWEARBOX9001_INPUT_H
 #define SWEARBOX9001_INPUT_H
 
-#include "playback.h"
-
 #include <SDL2/SDL_events.h>
 
-#include <stdint.h>
+
+enum SB9001BankKey {
+    SB9001_BANK_KEY_NONE,
+    SB9001_BANK_KEY_B,
+    SB9001_BANK_KEY_C,
+};
 
 
-extern uint16_t SB9001_KEY_LEFT;
-extern uint16_t SB9001_KEY_RIGHT;
-extern uint16_t SB9001_KEY_UP;
-extern uint16_t SB9001_KEY_DOWN;
-extern uint16_t SB9001_KEY_BANK_B;
-extern uint16_t SB9001_KEY_BANK_C;
-extern uint16_t SB9001_KEY_A;
-extern uint16_t SB9001_KEY_B;
-extern uint16_t SB9001_KEY_C;
-extern uint16_t SB9001_KEY_D;
-extern uint16_t SB9001_KEY_E;
-extern uint16_t SB9001_KEY_F;
-extern uint16_t SB9001_KEY_OPTION_A;
-extern uint16_t SB9001_KEY_OPTION_B;
+enum SB9001ActionKey {
+    SB9001_ACTION_KEY_NONE,
+    SB9001_ACTION_KEY_A,
+    SB9001_ACTION_KEY_B,
+    SB9001_ACTION_KEY_C,
+    SB9001_ACTION_KEY_D,
+    SB9001_ACTION_KEY_E,
+    SB9001_ACTION_KEY_F
+};
+
+enum SB9001HoriMotion {
+    SB9001_HORI_MOTION_NONE,
+    SB9001_HORI_MOTION_LEFT,
+    SB9001_HORI_MOTION_CENTRE,
+    SB9001_HORI_MOTION_RIGHT
+};
+
+enum SB9001VertMotion {
+    SB9001_VERT_MOTION_NONE,
+    SB9001_VERT_MOTION_UP,
+    SB9001_VERT_MOTION_CENTRE,
+    SB9001_VERT_MOTION_DOWN
+};
+
+struct SB9001Event {
+    enum SB9001HoriMotion hori_motion;
+    enum SB9001VertMotion vert_motion;
+
+    enum SB9001BankKey bank_key;
+    int bank_key_depressed;
+
+    enum SB9001ActionKey action_key;
+    int action_key_depressed;
+};
+
+struct SB9001Event sb_event_from_sdl_event(SDL_Event* event);
 
 void initialise_joystick(void);
-
-uint16_t key_enum_from_sdl_event(SDL_Event* event, uint16_t current);
-
-uint16_t action_key_in_keycodes(uint16_t keys);
-
-uint16_t bank_array_index_from_keycodes(uint16_t keys);
 
 
 #endif //SWEARBOX9001_INPUT_H

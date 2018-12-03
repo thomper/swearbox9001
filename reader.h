@@ -1,26 +1,10 @@
 #ifndef SWEARBOX9001_READER_H
 #define SWEARBOX9001_READER_H
 
+#include "playback.h"  // TODO: this is just for the sample structs, they should be split out to their own module
+
 #include <inttypes.h>
 
-
-#define BANK_SIZE 24  // the number of sounds available per bank
-
-struct Sample {
-    uint32_t num_bytes;
-    char* sample_data;
-};
-
-struct ASRSamples {
-    struct Sample* attack;
-    struct Sample* sustain;
-    struct Sample* release;
-};
-
-struct SampleBank {
-    struct ASRSamples* array[BANK_SIZE];
-    char* filename_stubs[BANK_SIZE];
-};
 
 /**
  * Load samples from file.

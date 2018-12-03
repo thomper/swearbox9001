@@ -1,5 +1,4 @@
 #include "playback.h"
-#include "reader.h"
 
 #include <ao/ao.h>
 
@@ -117,6 +116,10 @@ void release_sample(void) {
     ++samples_released;
 }
 
+int is_silent(void) {
+    return playback_state == PLAYBACK_WAITING;
+}
+
 void play_if_silent(struct ASRSamples *asr_samples) {
     if (asr_samples == NULL || asr_samples->attack == NULL ||
             asr_samples->sustain == NULL || asr_samples->release == NULL) {
@@ -124,7 +127,7 @@ void play_if_silent(struct ASRSamples *asr_samples) {
         return;
     }
 
-    if (playback_state != PLAYBACK_WAITING) {
+    if (!is_silent()) {
         return;
     }
 
