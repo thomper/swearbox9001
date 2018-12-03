@@ -10,7 +10,9 @@
 
 void initialise_playback(void);
 
-void play_if_silent(struct Sample *sample);
+void play_if_silent(struct ASRSamples *asr_samples);
+
+void release_sample(void);
 
 void tear_down_playback(void);
 

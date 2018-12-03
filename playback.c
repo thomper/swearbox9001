@@ -5,6 +5,7 @@
 
 #include <inttypes.h>
 #include <pthread.h>
+#include <assert.h>
 
 
 #define MAX_QUEUED 1024  // the number of sounds to queue before we start overwriting
@@ -18,15 +19,19 @@ enum PlaybackState {
 };
 
 // locals
-pthread_t playback_thread;
 ao_sample_format format;
 ao_device* device;
+
+pthread_t playback_thread;
 uint8_t quit = 0;
-struct Sample* queue[MAX_QUEUED];
+
+struct ASRSamples* queue[MAX_QUEUED];
 u_int insertion_index = 0;
 u_int playback_index = 0;
+
 enum PlaybackState playback_state = PLAYBACK_WAITING;
-char buffer[BUFFER_SIZE];
+int samples_released = 0;
+
 
 // functions
 static void increment_index(u_int *value) {
@@ -67,10 +72,23 @@ static void initialise_ao() {
 
 static void playback_thread_loop(void) {
     while (!quit) {
-        if (queue[playback_index] != NULL) {
-            playback_state = PLAYBACK_ATTACK;
-            play(queue[playback_index]);
+        struct ASRSamples* samples = queue[playback_index];
+
+        if (samples != NULL) {
+            assert(playback_state == PLAYBACK_ATTACK);  // Must have already been set or we've missed a safeguard.
+            play(samples->attack);
+
+            playback_state = PLAYBACK_SUSTAIN;
+            play(samples->sustain);  // Play sustain sample at least once.
+            while (samples_released == 0) {
+                play(samples->sustain);
+            }
+
+            playback_state = PLAYBACK_RELEASE;
+            play(samples->release);
+
             playback_state = PLAYBACK_WAITING;
+            --samples_released;
             queue[playback_index] = NULL;
             increment_index(&playback_index);
         } else {
@@ -95,9 +113,14 @@ void initialise_playback(void) {
     start_playback_thread();
 }
 
-void play_if_silent(struct Sample *sample) {
-    if (sample == NULL) {
-        fprintf(stderr, "NULL sample queued for playback.\n");
+void release_sample(void) {
+    ++samples_released;
+}
+
+void play_if_silent(struct ASRSamples *asr_samples) {
+    if (asr_samples == NULL || asr_samples->attack == NULL ||
+            asr_samples->sustain == NULL || asr_samples->release == NULL) {
+        fprintf(stderr, "NULL samples queued for playback.\n");
         return;
     }
 
@@ -105,7 +128,8 @@ void play_if_silent(struct Sample *sample) {
         return;
     }
 
-    queue[insertion_index] = sample;
+    playback_state = PLAYBACK_ATTACK;
+    queue[insertion_index] = asr_samples;
     increment_index(&insertion_index);
 }
 
