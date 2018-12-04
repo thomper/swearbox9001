@@ -6,6 +6,8 @@
 #include <inttypes.h>
 
 #define BANK_SIZE 24  // the number of sounds available per bank
+#define SEMITONES_RANGE 12  // the number of semitones available up and down
+#define PITCHES_AVAILABLE (SEMITONES_RANGE * 2 + 1)
 
 
 struct Sample {
@@ -14,9 +16,9 @@ struct Sample {
 };
 
 struct ASRSamples {
-    struct Sample* attack;
-    struct Sample* sustain;
-    struct Sample* release;
+    struct Sample* attack[PITCHES_AVAILABLE];
+    struct Sample* sustain[PITCHES_AVAILABLE];
+    struct Sample* release[PITCHES_AVAILABLE];
 };
 
 struct SampleBank {
@@ -31,6 +33,12 @@ int is_silent(void);
 void play_if_silent(struct ASRSamples *asr_samples);
 
 void release_sample(void);
+
+void increase_pitch(void);
+
+void decrease_pitch(void);
+
+int asr_samples_lengths_consistent(struct ASRSamples *asr_samples);
 
 void tear_down_playback(void);
 

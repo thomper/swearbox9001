@@ -27,12 +27,55 @@ uint8_t quit = 0;
 struct ASRSamples* queue[MAX_QUEUED];
 u_int insertion_index = 0;
 u_int playback_index = 0;
+u_int pitch_index = SEMITONES_RANGE;  // the centre pitch (unshifted)
 
 enum PlaybackState playback_state = PLAYBACK_WAITING;
 int samples_released = 0;
 
 
 // functions
+void increase_pitch(void) {
+    if (pitch_index < PITCHES_AVAILABLE - 1) {
+        ++pitch_index;
+    }
+}
+
+void decrease_pitch(void) {
+    if (pitch_index > 0) {
+        --pitch_index;
+    }
+}
+
+int asr_samples_lengths_consistent(struct ASRSamples *asr_samples) {
+    const uint32_t attack_length = asr_samples->attack[0]->num_bytes;
+    const uint32_t sustain_length = asr_samples->sustain[0]->num_bytes;
+    const uint32_t release_length = asr_samples->release[0]->num_bytes;
+
+    for (uint i = 1; i < PITCHES_AVAILABLE; i++) {
+        if (asr_samples->attack[i]->num_bytes != attack_length
+            ||asr_samples->sustain[i]->num_bytes != sustain_length
+            ||asr_samples->release[i]->num_bytes != release_length) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+int asr_samples_contains_null(struct ASRSamples* asr_samples) {
+    if (asr_samples == NULL) {
+        return 1;
+    }
+
+    for (uint i = 0; i < PITCHES_AVAILABLE; i++) {
+        if (asr_samples->attack[i] == NULL || asr_samples->sustain[i] == NULL || asr_samples->release[i] == NULL) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 static void increment_index(u_int *value) {
     ++*value;
     if (*value >= MAX_QUEUED) {
@@ -40,15 +83,17 @@ static void increment_index(u_int *value) {
     }
 }
 
-static void play(struct Sample* sample) {
-    uint32_t num_chunks = sample->num_bytes / BUFFER_SIZE;
+static void play(struct Sample* sample[]) {
+    // Assumes that every struct Sample has the same num_bytes value.
+    // This is checked when samples are loaded in reader.c so should be fine here.
+    uint32_t num_chunks = sample[0]->num_bytes / BUFFER_SIZE;
     uint32_t chunk_size = BUFFER_SIZE;
     for (uint i = 0; i < num_chunks; i++) {
         int is_final_chunk = i == num_chunks - 1;
         if (is_final_chunk) {
-            chunk_size = sample->num_bytes % BUFFER_SIZE;
+            chunk_size = sample[0]->num_bytes % BUFFER_SIZE;
         }
-        ao_play(device, sample->sample_data + i * BUFFER_SIZE, chunk_size);
+        ao_play(device, sample[pitch_index]->sample_data + i * BUFFER_SIZE, chunk_size);
     }
 }
 
@@ -73,7 +118,7 @@ static void playback_thread_loop(void) {
     while (!quit) {
         struct ASRSamples* samples = queue[playback_index];
 
-        if (samples != NULL) {
+        if (!asr_samples_contains_null(samples)) {
             assert(playback_state == PLAYBACK_ATTACK);  // Must have already been set or we've missed a safeguard.
             play(samples->attack);
 
@@ -121,8 +166,7 @@ int is_silent(void) {
 }
 
 void play_if_silent(struct ASRSamples *asr_samples) {
-    if (asr_samples == NULL || asr_samples->attack == NULL ||
-            asr_samples->sustain == NULL || asr_samples->release == NULL) {
+    if (asr_samples_contains_null(asr_samples)) {
         fprintf(stderr, "NULL samples queued for playback.\n");
         return;
     }

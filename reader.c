@@ -44,14 +44,16 @@ static void free_sample(struct Sample* sample) {
 
 static void free_asrsamples(struct ASRSamples* samples) {
     if (samples != NULL) {
-        free_sample(samples->attack);
-        samples->attack = NULL;
+        for (uint i = 0; i < PITCHES_AVAILABLE; i++) {
+            free_sample(samples->attack[i]);
+            samples->attack[i] = NULL;
 
-        free_sample(samples->sustain);
-        samples->sustain = NULL;
+            free_sample(samples->sustain[i]);
+            samples->sustain[i] = NULL;
 
-        free_sample(samples->release);
-        samples->release = NULL;
+            free_sample(samples->release[i]);
+            samples->release[i] = NULL;
+        }
 
         free(samples);
     }
@@ -65,33 +67,51 @@ void free_sample_bank_array(struct SampleBank* bank) {
 }
 
 static int load_asr_samples(char* const directory, char* const filename_stub, struct ASRSamples* samples) {
-    samples->attack = malloc(sizeof (struct Sample));
-    samples->sustain = malloc(sizeof (struct Sample));
-    samples->release = malloc(sizeof (struct Sample));
-    if (samples->attack == NULL || samples->sustain == NULL || samples-> release == NULL) {
-        fprintf(stderr, "Could not allocate memory for struct Sample.\n");
-        return 1;
+    for (uint i = 0; i < PITCHES_AVAILABLE; i++) {
+        samples->attack[i] = malloc(sizeof(struct Sample));
+        samples->sustain[i] = malloc(sizeof(struct Sample));
+        samples->release[i] = malloc(sizeof(struct Sample));
+        if (samples->attack[i] == NULL || samples->sustain[i] == NULL || samples->release[i] == NULL) {
+            fprintf(stderr, "Could not allocate memory for struct Sample.\n");
+            return 1;
+        }
     }
 
-    char path[strlen(directory) + strlen("/") + strlen(filename_stub) + strlen("_x.wav") + 1];
+    char path[strlen(directory) + strlen("/") + strlen(filename_stub) + strlen("_x_downxx.wav") + 1];
     int return_error = 0;
 
-    sprintf(path, "%s/%s_a.wav", directory, filename_stub);
-    if (load_sample(path, samples->attack) > 0) {
-        fprintf(stderr, "Error loading sample %s.\n", path);
-        return_error = 1;
+    for (uint i = 0; i < PITCHES_AVAILABLE; i++) {
+        char pitch_suffix[strlen("_downxx") + 1];
+        if (i < SEMITONES_RANGE) {
+            sprintf(pitch_suffix, "_down%02d", SEMITONES_RANGE - i);
+        } else if (i == SEMITONES_RANGE) {
+            pitch_suffix[0] = '\0';
+        } else {
+            sprintf(pitch_suffix, "_up%02d", i - SEMITONES_RANGE);
+        }
+
+        sprintf(path, "%s/%s_a%s.wav", directory, filename_stub, pitch_suffix);
+        if (load_sample(path, samples->attack[i]) > 0) {
+            fprintf(stderr, "Error loading sample %s.\n", path);
+            return_error = 1;
+        }
+
+        sprintf(path, "%s/%s_s%s.wav", directory, filename_stub, pitch_suffix);
+        if (load_sample(path, samples->sustain[i]) > 0) {
+            fprintf(stderr, "Error loading sample %s.\n", path);
+            return_error = 2;
+        }
+
+        sprintf(path, "%s/%s_r%s.wav", directory, filename_stub, pitch_suffix);
+        if (load_sample(path, samples->release[i]) > 0) {
+            fprintf(stderr, "Error loading sample %s.\n", path);
+            return_error = 3;
+        }
     }
 
-    sprintf(path, "%s/%s_s.wav", directory, filename_stub);
-    if (load_sample(path, samples->sustain) > 0) {
-        fprintf(stderr, "Error loading sample %s.\n", path);
-        return_error = 2;
-    }
-
-    sprintf(path, "%s/%s_r.wav", directory, filename_stub);
-    if (load_sample(path, samples->release) > 0) {
-        fprintf(stderr, "Error loading sample %s.\n", path);
-        return_error = 3;
+    if (!asr_samples_lengths_consistent(samples)) {
+        fprintf(stderr, "Error loading sample with filename stub %s.\n", filename_stub);
+        return_error = 4;
     }
 
     return return_error;

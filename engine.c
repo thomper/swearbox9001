@@ -112,7 +112,10 @@ static void initialise_samples(void) {
     bank.filename_stubs[0] = "song_f";
     bank.filename_stubs[1] = "test_f";
 
-    load_sample_bank(&bank);
+    if (load_sample_bank(&bank) != 0) {
+        fprintf(stderr, "Error loading samples, exiting.\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
 void initialise(void) {
@@ -162,6 +165,12 @@ int main_loop() {
                     current_playing_bank_index = invalid_bank_index;
                 }
             }
+        }
+
+        if (sb_event.vert_motion == SB9001_VERT_MOTION_UP) {
+            increase_pitch();
+        } else if (sb_event.vert_motion == SB9001_VERT_MOTION_DOWN) {
+            decrease_pitch();
         }
 
         update_held_keys(&held_keys, &sb_event);
