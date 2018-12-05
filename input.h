@@ -46,6 +46,8 @@ struct SB9001Event {
     int action_key_depressed;
 };
 
+extern const struct SB9001Event EMPTY_SB_EVENT;
+
 struct SB9001Event sb_event_from_sdl_event(SDL_Event* event);
 
 void initialise_joystick(void);

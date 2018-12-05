@@ -8,7 +8,7 @@
 
 
 SDL_Joystick* joystick = NULL;
-const struct SB9001Event EMPTY_EVENT = {
+const struct SB9001Event EMPTY_SB_EVENT = {
     SB9001_HORI_MOTION_NONE,  // hori_motion
     SB9001_VERT_MOTION_NONE,  // vert_motion
 
@@ -20,7 +20,7 @@ const struct SB9001Event EMPTY_EVENT = {
 };
 
 struct SB9001Event sb_event_from_sdl_event(SDL_Event* event) {
-    struct SB9001Event current = EMPTY_EVENT;
+    struct SB9001Event current = EMPTY_SB_EVENT;
 
     if (event->type == SDL_JOYBUTTONDOWN) {
         switch (event->jbutton.button) {
@@ -68,8 +68,6 @@ struct SB9001Event sb_event_from_sdl_event(SDL_Event* event) {
 }
 
 void initialise_joystick(void) {
-    SDL_Init(SDL_INIT_JOYSTICK | SDL_INIT_EVENTS);
-
     int num_joysticks = SDL_NumJoysticks();
     if (num_joysticks < 1) {
         fprintf(stderr, "No joysticks found, exiting.\n");

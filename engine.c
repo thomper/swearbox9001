@@ -3,7 +3,11 @@
 #include "playback.h"
 #include "reader.h"
 
+#include <SDL2/SDL.h>
+
 #include <assert.h>
+
+#define PITCH_REPEAT_MS 50
 
 
 static struct SampleBank bank;
@@ -12,7 +16,33 @@ struct HeldKeyState {
     int bank_b_held;
     int bank_c_held;
     enum SB9001ActionKey action_held;
+
+    // These hold the point in time the motion was input, need to find a better name.
+    uint64_t point_up_engaged;
+    uint64_t point_down_engaged;
+    uint64_t point_left_engaged;
+    uint64_t point_right_engaged;
 };
+
+void handle_pitch_change_repeat(struct HeldKeyState* state) {
+    if (state->point_up_engaged == 0 && state->point_down_engaged == 0) {
+        return;
+    }
+
+    uint64_t now = SDL_GetPerformanceCounter();
+    uint64_t before = state->point_up_engaged != 0 ? state->point_up_engaged : state->point_down_engaged;
+
+    double milliseconds_since_change = (now - before) * 1000 / (double)SDL_GetPerformanceFrequency();
+    if (milliseconds_since_change >= PITCH_REPEAT_MS) {
+        if (state->point_up_engaged != 0) {
+            increase_pitch();
+            state->point_up_engaged = now;
+        } else {
+            decrease_pitch();
+            state->point_down_engaged = now;
+        }
+    }
+}
 
 static void update_held_keys(struct HeldKeyState* held_keys, struct SB9001Event* sb_event) {
     int bank_key_pressed_or_released = sb_event->bank_key != SB9001_BANK_KEY_NONE;
@@ -32,14 +62,34 @@ static void update_held_keys(struct HeldKeyState* held_keys, struct SB9001Event*
         }
     }
 
+    if (sb_event->vert_motion == SB9001_VERT_MOTION_CENTRE) {
+        held_keys->point_up_engaged = held_keys->point_down_engaged = 0;
+    } else if (sb_event->vert_motion == SB9001_VERT_MOTION_UP) {
+        held_keys->point_up_engaged = SDL_GetPerformanceCounter();
+        held_keys->point_down_engaged = 0;
+    } else if (sb_event->vert_motion == SB9001_VERT_MOTION_DOWN) {
+        held_keys->point_down_engaged = SDL_GetPerformanceCounter();
+        held_keys->point_up_engaged = 0;
+    }
+
+    if (sb_event->hori_motion == SB9001_HORI_MOTION_CENTRE) {
+        held_keys->point_left_engaged = held_keys->point_right_engaged = 0;
+    } else if (sb_event->hori_motion == SB9001_HORI_MOTION_LEFT) {
+        held_keys->point_left_engaged = SDL_GetPerformanceCounter();
+        held_keys->point_right_engaged = 0;
+    } else if (sb_event->hori_motion == SB9001_HORI_MOTION_RIGHT) {
+        held_keys->point_right_engaged = SDL_GetPerformanceCounter();
+        held_keys->point_left_engaged = 0;
+    }
+
     int action_key_pressed_or_released = sb_event->action_key != SB9001_ACTION_KEY_NONE;
     if (!action_key_pressed_or_released) {
         return;
     }
 
-    int key_just_pressed_and_no_key_was_held = sb_event->action_key_depressed
+    int action_key_just_pressed_and_no_key_was_held = sb_event->action_key_depressed
             && held_keys->action_held == SB9001_ACTION_KEY_NONE;
-    if (key_just_pressed_and_no_key_was_held) {
+    if (action_key_just_pressed_and_no_key_was_held) {
         held_keys->action_held = sb_event->action_key;
     } else if (!sb_event->action_key_depressed
             && sb_event->action_key == held_keys->action_held) {
@@ -119,6 +169,10 @@ static void initialise_samples(void) {
 }
 
 void initialise(void) {
+    if (SDL_Init(SDL_INIT_JOYSTICK | SDL_INIT_EVENTS | SDL_INIT_TIMER) != 0) {
+        fprintf(stderr, "Error initialising SDL, exiting.\n");
+    };
+
     initialise_joystick();
     initialise_playback();
     initialise_samples();
@@ -136,17 +190,22 @@ int main_loop() {
     uint16_t current_playing_bank_index = invalid_bank_index;
 
     struct HeldKeyState held_keys = {
-            0,                      // bank_b_held
-            0,                      // bank_c_held
-            SB9001_ACTION_KEY_NONE  // action_held
+            0,                       // bank_b_held
+            0,                       // bank_c_held
+            SB9001_ACTION_KEY_NONE,  // action_held
+
+            0,                       // point_up_engaged;
+            0,                       // point_down_engaged;
+            0,                       // point_left_engaged;
+            0                        // point_right_engaged;
     };
 
     while (1) {
         if (SDL_PollEvent(&event) == 0) {
-            continue;
+            sb_event = EMPTY_SB_EVENT;
+        } else {
+            sb_event = sb_event_from_sdl_event(&event);
         }
-
-        sb_event = sb_event_from_sdl_event(&event);
 
         if (is_silent()) {
             int action_key_just_pressed = sb_event.action_key != SB9001_ACTION_KEY_NONE && sb_event.action_key_depressed;
@@ -167,6 +226,7 @@ int main_loop() {
             }
         }
 
+        handle_pitch_change_repeat(&held_keys);
         if (sb_event.vert_motion == SB9001_VERT_MOTION_UP) {
             increase_pitch();
         } else if (sb_event.vert_motion == SB9001_VERT_MOTION_DOWN) {
